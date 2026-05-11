@@ -1,5 +1,5 @@
 from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import declarative_base
 import datetime
 
 Base = declarative_base()
@@ -17,7 +17,7 @@ class VitalSigns(Base):
     __tablename__ = "vital_signs"
 
     id= Column(Integer, primary_key=True)
-    patient_id= Column(Integer,ForeignKey("patients.id") )
+    patient_id= Column(Integer,ForeignKey("patients.id") ) 
     heart_rate= Column(Float)
     systolic_bp= Column(Float)
     respiratory_rate= Column(Float)
