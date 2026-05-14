@@ -1,0 +1,18 @@
+src/
+├── components/
+│   ├── triage/
+│   │   ├── TriageMain.jsx          # Main container (Step 1 + Step 2)
+│   │   ├── VitalsForm.jsx          # Step 1: Quick vitals + big red flags
+│   │   ├── CriticalFlags.jsx       # Big red flag buttons
+│   │   ├── DetailedAssessment.jsx  # Step 2: Collapsible discriminators
+│   │   ├── ClinicianOverride.jsx   # Override section
+│   │   └── TriageResult.jsx        # Final score display
+│   └── common/
+│       ├── InputField.jsx
+│       └── BigButton.jsx
+├── pages/
+│   └── NewTriage.jsx               # Main page for new patient triage
+├── lib/
+│   └── triageUtils.js              # Helper functions
+├── App.jsx
+└── index.css
