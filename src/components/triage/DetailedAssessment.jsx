@@ -1,77 +1,148 @@
 // src/components/triage/DetailedAssessment.jsx
 import React from 'react';
 
-const DetailedAssessment = ({ redFlags, setRedFlags, age, result, onBack }) => {
-    const isPediatric = age && age < 12;
+const DetailedAssessment = ({ 
+  redFlags, 
+  setRedFlags, 
+  age, 
+  result, 
+  onBack 
+}) => {
 
-    const toggleFlag = (flag) => {
-        setRedFlags(prev => ({
-            ...prev,
-            [flag]: !prev[flag]
-        }));
-    };
+  const isPediatric = age && age < 12;
 
-    return (
-        <div className="space-y-8">
-            <div>
-                <button 
-                    onClick={onBack}
-                    className="mb-6 text-blue-600 hover:text-blue-700 flex items-center gap-2"
-                >
-                    ← Back to Vitals
-                </button>
+  const toggleFlag = (flag) => {
+    setRedFlags(prev => ({
+      ...prev,
+      [flag]: !prev[flag]
+    }));
+  };
 
-                <h2 className="text-2xl font-semibold mb-6">Additional Clinical Findings</h2>
+  return (
+    <div style={{ padding: '24px', maxWidth: '720px', margin: '0 auto' }}>
+      <button 
+        onClick={onBack}
+        style={{
+          marginBottom: '20px',
+          padding: '8px 16px',
+          background: 'none',
+          border: 'none',
+          color: '#3b82f6',
+          fontSize: '1rem',
+          cursor: 'pointer'
+        }}
+      >
+        ← Back to Vitals
+      </button>
 
-                {/* Red Flag Section */}
-                <div className="mb-8">
-                    <h3 className="text-red-600 font-medium mb-4">Critical Discriminators (Red Flags)</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        <button 
-                            onClick={() => toggleFlag('active_seizure')}
-                            className={`p-4 rounded-2xl border-2 text-left transition-all ${redFlags.active_seizure ? 'border-red-600 bg-red-50' : 'border-gray-200 hover:border-red-200'}`}
-                        >
-                            <strong>Active Seizure / Convulsing</strong>
-                        </button>
+      <h2 style={{ marginBottom: '24px', color: '#1e40af' }}>Additional Clinical Findings</h2>
 
-                        <button 
-                            onClick={() => toggleFlag('airway_obstruction')}
-                            className={`p-4 rounded-2xl border-2 text-left transition-all ${redFlags.airway_obstruction ? 'border-red-600 bg-red-50' : 'border-gray-200 hover:border-red-200'}`}
-                        >
-                            <strong>Airway Obstruction / Severe Distress</strong>
-                        </button>
+      {/* Red Flags Section */}
+      <div style={{ marginBottom: '32px' }}>
+        <h3 style={{ color: '#b91c1c', marginBottom: '16px' }}>Critical Discriminators (Safety Nets)</h3>
+        
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+          <button 
+            onClick={() => toggleFlag('active_seizure')}
+            style={{
+              padding: '16px',
+              border: redFlags.active_seizure ? '2px solid #dc2626' : '2px solid #e5e7eb',
+              background: redFlags.active_seizure ? '#fee2e2' : 'white',
+              borderRadius: '12px',
+              textAlign: 'left',
+              fontSize: '1rem'
+            }}
+          >
+            <strong>Active Seizure / Convulsing</strong>
+          </button>
 
-                        <button 
-                            onClick={() => toggleFlag('uncontrolled_bleeding')}
-                            className={`p-4 rounded-2xl border-2 text-left transition-all ${redFlags.uncontrolled_bleeding ? 'border-red-600 bg-red-50' : 'border-gray-200 hover:border-red-200'}`}
-                        >
-                            <strong>Uncontrolled Bleeding</strong>
-                        </button>
+          <button 
+            onClick={() => toggleFlag('airway_obstruction')}
+            style={{
+              padding: '16px',
+              border: redFlags.airway_obstruction ? '2px solid #dc2626' : '2px solid #e5e7eb',
+              background: redFlags.airway_obstruction ? '#fee2e2' : 'white',
+              borderRadius: '12px',
+              textAlign: 'left',
+              fontSize: '1rem'
+            }}
+          >
+            <strong>Airway Obstruction</strong>
+          </button>
 
-                        <button 
-                            onClick={() => toggleFlag('chest_pain')}
-                            className={`p-4 rounded-2xl border-2 text-left transition-all ${redFlags.chest_pain ? 'border-orange-600 bg-orange-50' : 'border-gray-200 hover:border-orange-200'}`}
-                        >
-                            <strong>Severe Chest Pain</strong>
-                        </button>
+          <button 
+            onClick={() => toggleFlag('uncontrolled_bleeding')}
+            style={{
+              padding: '16px',
+              border: redFlags.uncontrolled_bleeding ? '2px solid #dc2626' : '2px solid #e5e7eb',
+              background: redFlags.uncontrolled_bleeding ? '#fee2e2' : 'white',
+              borderRadius: '12px',
+              textAlign: 'left',
+              fontSize: '1rem'
+            }}
+          >
+            <strong>Uncontrolled Bleeding</strong>
+          </button>
 
-                        {isPediatric && (
-                            <button 
-                                onClick={() => toggleFlag('central_cyanosis')}
-                                className={`p-4 rounded-2xl border-2 text-left transition-all ${redFlags.central_cyanosis ? 'border-red-600 bg-red-50' : 'border-gray-200 hover:border-red-200'}`}
-                            >
-                                <strong>Central Cyanosis (Paediatric)</strong>
-                            </button>
-                        )}
-                    </div>
-                </div>
+          <button 
+            onClick={() => toggleFlag('chest_pain')}
+            style={{
+              padding: '16px',
+              border: redFlags.chest_pain ? '2px solid #f59e0b' : '2px solid #e5e7eb',
+              background: redFlags.chest_pain ? '#fef3c7' : 'white',
+              borderRadius: '12px',
+              textAlign: 'left',
+              fontSize: '1rem'
+            }}
+          >
+            <strong>Severe Chest Pain</strong>
+          </button>
 
-                <div className="text-center text-sm text-gray-500 mt-8">
-                    These flags can automatically upgrade priority to <strong>Red</strong> or <strong>Orange</strong>
-                </div>
-            </div>
+          {isPediatric && (
+            <button 
+              onClick={() => toggleFlag('central_cyanosis')}
+              style={{
+                padding: '16px',
+                border: redFlags.central_cyanosis ? '2px solid #dc2626' : '2px solid #e5e7eb',
+                background: redFlags.central_cyanosis ? '#fee2e2' : 'white',
+                borderRadius: '12px',
+                textAlign: 'left',
+                fontSize: '1rem'
+              }}
+            >
+              <strong>Central Cyanosis (Child)</strong>
+            </button>
+          )}
         </div>
-    );
+      </div>
+
+      <div style={{ 
+        padding: '16px', 
+        backgroundColor: '#f3f4f6', 
+        borderRadius: '12px',
+        fontSize: '0.95rem',
+        color: '#374151'
+      }}>
+        <strong>Note:</strong> Selecting any red flag above can automatically upgrade the patient to <strong>Red</strong> or <strong>Orange</strong> priority.
+      </div>
+
+      <button 
+        onClick={onBack}
+        style={{
+          marginTop: '30px',
+          width: '100%',
+          padding: '16px',
+          backgroundColor: '#64748b',
+          color: 'white',
+          border: 'none',
+          borderRadius: '12px',
+          fontSize: '1.05rem'
+        }}
+      >
+        Finish Assessment
+      </button>
+    </div>
+  );
 };
 
 export default DetailedAssessment;
