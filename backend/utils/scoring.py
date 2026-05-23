@@ -1,74 +1,93 @@
-from typing import Dict, Any, Tuple, List
+from typing import Dict, Any, Optional
 from datetime import datetime
 
 class TriageScore:
     """
     Data container for a completed triage assessment.
-    Stores both the raw TEWS score and the final priority decision.
     """
     def __init__(self, base_score: int, final_score: float, priority: str, 
                  override_reason: str = None, clinician_override: bool = False):
-        self.base_score = base_score          # Raw TEWS points before any multiplier
-        self.final_score = round(final_score, 1)  # Score after discriminator multiplier
-        self.priority = priority              # Final color: Red/Orange/Yellow/Green
-        self.override_reason = override_reason    # Why it was overridden (if applicable)
-        self.clinician_override = clinician_override  # True if a doctor manually changed it
-        self.timestamp = datetime.now().isoformat()   # When the triage was done
+        self.base_score = base_score
+        self.final_score = round(final_score, 1)
+        self.priority = priority
+        self.override_reason = override_reason
+        self.clinician_override = clinician_override
+        self.timestamp = datetime.now().isoformat()
 
 
 def calculate_tews_score(vitals: Dict[str, Any]) -> int:
-    """
+    """Calculate Triage Early Warning Score (TEWS) - SATS inspired
     Step 1: Calculate the Triage Early Warning Score (TEWS).
     
     Each vital sign is scored 0-3 based on how far it deviates from normal.
     0 = normal, 1 = mild concern, 2 = significant concern, 3 = critical
-    Maximum possible score = 17 (all vitals at worst)
+    Maximum possible score = 17 (all vitals at worst)    
     """
+    
+    
     score = 0
 
     # Heart Rate (normal: 51-100 bpm)
     # Bradycardia (<41) or severe tachycardia (>129) = critical (3pts)
     hr = vitals.get("heart_rate")
     if hr is not None:
-        if 51 <= hr <= 100: score += 0
-        elif 41 <= hr <= 50 or 101 <= hr <= 110: score += 1
-        elif 111 <= hr <= 129: score += 2
-        else: score += 3
+        if 51 <= hr <= 100:
+            score += 0
+        elif 41 <= hr <= 50 or 101 <= hr <= 110:
+            score += 1
+        elif 111 <= hr <= 129:
+            score += 2
+        else:  # <41 or >=130
+            score += 3
 
     # Respiratory Rate (normal: 9-14 breaths/min)
     # Bradypnea (<9) or tachypnea (>29) = critical (3pts)
     rr = vitals.get("respiratory_rate")
     if rr is not None:
-        if 9 <= rr <= 14: score += 0
-        elif 15 <= rr <= 20: score += 1
-        elif 21 <= rr <= 29: score += 2
-        else: score += 3
+        if 9 <= rr <= 14:
+            score += 0
+        elif 15 <= rr <= 20:
+            score += 1
+        elif 21 <= rr <= 29:
+            score += 2
+        else:  # <9 or >=30
+            score += 3
 
-    # Systolic Blood Pressure (normal: 101-199 mmHg)
+   # Systolic Blood Pressure (normal: 101-199 mmHg)
     # Severe hypotension (<71) = critical (3pts)
     sbp = vitals.get("systolic_bp")
     if sbp is not None:
-        if 101 <= sbp <= 199: score += 0
-        elif 81 <= sbp <= 100: score += 1
-        elif sbp >= 200 or 71 <= sbp <= 80: score += 2
-        else: score += 3
+        if 101 <= sbp <= 199:
+            score += 0
+        elif 81 <= sbp <= 100:
+            score += 1
+        elif sbp >= 200 or 71 <= sbp <= 80:
+            score += 2
+        else:  # <71
+            score += 3
 
     # Oxygen Saturation (normal: >=92%)
     # SpO2 <85% = critical hypoxia (3pts)
     # Note: SpO2 is a discriminator — only RED and normal ranges apply
     spo2 = vitals.get("oxygen_saturation")
     if spo2 is not None:
-        if spo2 >= 92: score += 0
-        elif 85 <= spo2 <= 91: score += 2
-        else: score += 3
+        if spo2 >= 92:
+            score += 0
+        elif 85 <= spo2 <= 91:
+            score += 2
+        else:  # <85
+            score += 3
 
     # Temperature (normal: 36.0-38.4°C)
     # Hypothermia (<35°C) or hyperthermia (>39°C) = critical
     temp = vitals.get("temperature")
     if temp is not None:
-        if 36.0 <= temp <= 38.4: score += 0
-        elif (35.0 <= temp < 36.0) or (38.5 <= temp <= 39.0): score += 1
-        else: score += 2
+        if 36.0 <= temp <= 38.4:
+            score += 0
+        elif (35.0 <= temp < 36.0) or (38.5 <= temp <= 39.0):
+            score += 1
+        else:
+            score += 2
 
     # Mobility — categorical assessment of patient movement
     # Walking independently = normal (0pts)
@@ -79,13 +98,13 @@ def calculate_tews_score(vitals: Dict[str, Any]) -> int:
         score += 0
     elif "help" in mobility or "assisted" in mobility:
         score += 1
-    else:
+    else:  # stretcher, immobile, etc.
         score += 2
 
     return score
 
 
-def get_clinical_discriminators(red_flags: Dict[str, bool], age: int = None) -> Tuple[str, str]:
+def get_clinical_discriminators(red_flags: Dict[str, bool], age: Optional[int] = None) -> tuple:
     """
     Step 2: Check for clinical discriminators.
     
@@ -93,25 +112,20 @@ def get_clinical_discriminators(red_flags: Dict[str, bool], age: int = None) -> 
     A patient can have normal vitals but still be Red/Orange due to a discriminator.
     This is SATS's safety net — ensuring catastrophic conditions are never missed.
     
-    Returns: (priority_color, reason) or (None, None) if no discriminator triggered
-    """
-    is_pediatric = age is not None and age < 12  # Flag for future pediatric-specific logic
-
+    Return (priority, reason) if any discriminator is triggered"""
     # RED discriminators — immediate life threat, cannot wait
-    if (red_flags.get("active_seizure") or       # Active neurological emergency
-        red_flags.get("airway_obstruction") or    # ABC: Airway is first priority
-        red_flags.get("severe_respiratory_distress") or  # ABC: Breathing compromise
-        red_flags.get("uncontrolled_bleeding") or  # ABC: Circulation failure
-        red_flags.get("hypoglycaemia")):           # Brain fuel crisis
-        return "Red", "Critical Discriminator (Red)"
-
+    if (red_flags.get("active_seizure") or 
+        red_flags.get("airway_obstruction") or 
+        red_flags.get("severe_respiratory_distress") or 
+        red_flags.get("uncontrolled_bleeding") or 
+        red_flags.get("hypoglycaemia")):
+        return "Red", "Critical Discriminator"
     # ORANGE discriminators — high risk, treat within 10 minutes
-    if (red_flags.get("chest_pain") or           # Possible heart attack
-        red_flags.get("shortness_of_breath") or   # Respiratory compromise
-        red_flags.get("high_energy_trauma") or    # Internal injury risk (e.g. car crash)
-        red_flags.get("severe_burns") or          # Systemic burn response
-        red_flags.get("post_ictal")):             # Post-seizure state
-        return "Orange", "High-Risk Discriminator (Orange)"
+    if (red_flags.get("chest_pain") or 
+        red_flags.get("shortness_of_breath") or 
+        red_flags.get("high_energy_trauma") or 
+        red_flags.get("severe_burns")):
+        return "Orange", "High-Risk Discriminator"
 
     return None, None  # No discriminator — proceed with TEWS score
 
@@ -119,13 +133,12 @@ def get_clinical_discriminators(red_flags: Dict[str, bool], age: int = None) -> 
 def calculate_triage_score(
     vitals: Dict[str, Any], 
     red_flags: Dict[str, bool], 
-    age: int = None,
-    clinician_override: str = None,
-    override_reason: str = None
-) -> Dict:
+    age: Optional[int] = None,
+    clinician_override: Optional[str] = None,
+    override_reason: Optional[str] = None
+) -> Dict[str, Any]:
     """
-    Step 3: Main orchestrator — combines TEWS + Discriminators + Clinician Override.
-    
+    Main triage calculation— combines TEWS + Discriminators + Clinician Override.
     Priority order (highest to lowest):
     1. Clinician Override — senior doctor manually sets priority
     2. Discriminator Override — dangerous condition detected
@@ -133,14 +146,13 @@ def calculate_triage_score(
     
     Returns a dict with score, priority color, and override details.
     """
+
     # Calculate raw TEWS score from vitals
     base_score = calculate_tews_score(vitals)
-    
-    # Check if any discriminator conditions are present
+
     discriminator_priority, disc_reason = get_clinical_discriminators(red_flags, age)
 
-    # === PRIORITY 1: Clinician Override ===
-    # A senior doctor's judgment always takes precedence over the algorithm
+    # Clinician Override (Highest Priority)
     if clinician_override and clinician_override in ["Red", "Orange", "Yellow", "Green"]:
         return {
             "base_score": base_score,
@@ -151,29 +163,26 @@ def calculate_triage_score(
             "discriminator_override": False
         }
 
-    # === PRIORITY 2: Discriminator Override ===
-    # Critical conditions bypass TEWS — score is doubled to reflect urgency
+    # Discriminator Override
     if discriminator_priority:
         return {
             "base_score": base_score,
-            "final_score": base_score * 2.0,  # Multiplier signals severity to dashboard
+            "final_score": base_score * 2.0,
             "priority": discriminator_priority,
             "override_reason": disc_reason,
             "clinician_override": False,
             "discriminator_override": True
         }
 
-    # === PRIORITY 3: Standard TEWS-based scoring ===
-    # No overrides — use raw score to determine color
-    # Thresholds based on SATS documentation
+    # Standard TEWS Priority
     if base_score >= 7:
-        priority = "Red"      # Emergency — immediate treatment
+        priority = "Red"
     elif base_score >= 4:
-        priority = "Orange"   # Very Urgent — treat within 10 mins
+        priority = "Orange"
     elif base_score >= 2:
-        priority = "Yellow"   # Urgent — treat within 60 mins
+        priority = "Yellow"
     else:
-        priority = "Green"    # Routine — treat within 4 hours
+        priority = "Green"
 
     return {
         "base_score": base_score,
@@ -186,14 +195,8 @@ def calculate_triage_score(
 
 
 def run_tests():
-    """
-    Test suite — validates scoring engine against known clinical scenarios.
-    Run this file directly to verify the engine is working correctly.
-    """
-    print("🧪 HealthSync Triage Scoring - Test Cases\n")
-    
-    tests = [
-        {
+    """Run test suite and return results"""
+    tests = [  {
             "name": "1. Normal Adult Patient",
             "vitals": {
                 "heart_rate": 78,
@@ -278,9 +281,9 @@ def run_tests():
             "red_flags": {"high_energy_trauma": True},
             "age": 31,
             "expected": "Orange"
-        }
-    ]
+        } ]  # Keep your existing tests here
 
+    results = []
     for test in tests:
         result = calculate_triage_score(
             vitals=test["vitals"],
@@ -289,13 +292,16 @@ def run_tests():
             clinician_override=test.get("clinician_override"),
             override_reason=test.get("override_reason")
         )
-        
-        status = "✅ PASS" if result["priority"] == test["expected"] else "❌ FAIL"
-        print(f"{status} | {test['name']}")
-        print(f"   Priority: {result['priority']} | Base: {result['base_score']} | Final: {result['final_score']}")
-        if result.get("override_reason"):
-            print(f"   Override: {result['override_reason']}")
-        print("-" * 60)
+        passed = result["priority"] == test["expected"]
+        results.append({
+            "name": test["name"],
+            "passed": passed,
+            "expected": test["expected"],
+            "got": result["priority"],
+            "base_score": result["base_score"]
+        })
+    
+    return results
 
 
 if __name__ == "__main__":

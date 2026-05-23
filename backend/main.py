@@ -1,19 +1,28 @@
 from fastapi import FastAPI
-from scoring import calculate_triage_score
-from database import init_db
+from fastapi.middleware.cors import CORSMiddleware
+from routers import triage
 
-app = FastAPI()
+app = FastAPI(
+    title="HealthSync Triage API",
+    description="Offline-first triage intelligence layer for Ghanaian hospitals",
+    version="1.0.0"
+)
 
-@app.on_event("startup")
-def startup():
-    init_db()
+# CORS - Allow frontend to connect
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],           # Change to your frontend URL in production
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-@app.post("/triage/calculate")
-def calculate_triage(data: dict):
-    result = calculate_triage_score(
-        vitals=data["vitals"],
-        red_flags=data["red_flags"],
-        age=data.get("age"),
-        clinician_priority=data.get("clinician_priority")
-    )
-    return result
+app.include_router(triage.router)
+
+@app.get("/")
+async def root():
+    return {
+        "message": "HealthSync Backend is running",
+        "status": "healthy",
+        "version": "1.0.0"
+    }
